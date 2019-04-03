@@ -1,0 +1,214 @@
+Spring @Required Annotation.
+L'annotazione @Required si applica ai metodi setter di un bean, indicherà
+che la proprietà relativa deve essere valorizzata tramite il file di configurazione XML a tempo di configurazione.
+Altrimenti si genererà una eccezione di tipo BeanInitializationException.
+
+@Autowired(required=false)
+Per default, l'annotazione @Autowired esegue il controllo delle dipendenze per assicurare che una proprietà
+sia stata iniettata propriamente.
+Quando Spring non trova un matching bean, genera un'eccezione.
+Per risolvere, è possibile disabilitare il controllo impostando l'attributo "required" di @Autowired a false.
+
+Spring @Autowired Annotation
+L'annotazione @Autowired è usata dal Framework Spring per effettuare l'auto-wire dei bean tramite nome, tipo, ecc.
+Se utiliziziamo l'annotazione @Autowired su un setterm costruttore o attributo di un bean, il container Spring
+effettuerà un controllo per verificare la corretta iniezione della proprietà.
+
+Nel caso il container Spring non trovi un bean da collegare, genererà un'eccezione come nel caso seguente: 
+
+1. Creazione di una classe Address POJO:
+
+public class Address {
+ 
+ private String street;
+ private String city;
+ private String state;
+ 
+ public Address() {
+ }
+ 
+ public String getStreet() {
+  return street;
+ }
+ 
+ public void setStreet(String street) {
+  this.street = street;
+ }
+ 
+ public String getCity() {
+  return city;
+ }
+ 
+ public void setCity(String city) {
+  this.city = city;
+ }
+ 
+ public String getState() {
+  return state;
+ }
+ 
+ public void setState(String state) {
+  this.state = state;
+ }
+}
+
+2: Creazione di un POJO Employee con attributo un oggetto di tipo Address
+ 
+import org.springframework.beans.factory.annotation.Autowired;
+public class Employee {
+ 
+ private String name;
+ private int age;
+ private Address address;
+ 
+ public Employee() {
+ }
+
+ public String getName() {
+  return name;
+ }
+ 
+ public void setName(String name) {
+  this.name = name;
+ }
+ 
+ public int getAge() {
+  return age;
+ }
+ 
+ public void setAge(int age) {
+  this.age = age;
+ }
+ 
+ public Address getAddress() {
+  return address;
+ }
+ 
+ // Qui Autowired è applicato direttamente sul metodo setter
+ @Autowired
+ public void setAddress(Address address) {
+  this.address = address;
+ }
+}
+
+3. Creazione di un file XML di configurazione Spring
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xmlns:context="http://www.springframework.org/schema/context"
+ xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+ <!-- per abilitare le Annotaizone Spring è necessario fornire il relativo tag seguente
+  .... -->
+
+ <context:annotation-config />
+
+ <bean id="employee" class="org.spring.autowire.Employee">
+  <property name="name" value="Jonty" />
+  <property name="age" value="28" />
+ </bean>
+
+ <!-- <bean id="address" class="org.spring.autowire.Address">
+
+  <property name="street" value="Town Hall Street" />
+  <property name="city" value="Pune" />
+  <property name="state" value="Maharashtra"></property>
+ </bean> -->
+
+</beans>
+
+
+Il bean di id "address" è stato commentato, se facciamo girare la classe di test mostrata di seguito
+il container Spring troverà che la classe Employee ha un meodo setter sull'attributo address il quale 
+è stato annotato con @Autowirerd.
+Spring verificherò il file di configurazione xml è non troverà nessuna property per address e lancerà
+un'eccezione. Il tutto dipende dal fatto che l'annotazione @Autowired verifica forzatamente il rispetto
+della dipendenza.
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+ 
+public class Test {
+ 
+ public static void main(String[] args) {
+ 
+  ApplicationContext context = 
+    new ClassPathXmlApplicationContext(("spring.xml"));
+ 
+  Employee employee = (Employee)context.getBean("employee");
+ 
+  System.out.println("The name of Employee is : " + employee.getName());
+  System.out.println("The age of Employee is : " + employee.getAge());
+ 
+  if(!(employee.getAddress() == null)){
+   System.out.println("The address of Employee is : " + 
+     employee.getAddress().getStreet() +" "+
+     employee.getAddress().getCity() +" "+
+     employee.getAddress().getState());
+  }
+  else {
+   System.out.println("Address is not wired");
+  }
+ }
+ 
+}
+
+Il programma andrà in eccezione.
+
+Per rendere il controllo delle dipendenze opzionali per il container Spring (con opzionale: intendiamo
+che vogliamo l'auto-wiring del bean solo se presente nel file XML e se non presente l'attributo deve essere
+impostato a null) si fa uso dell'attibuto "rquired" dell'annotazione @Autowired.
+Il valore di default di questo attributo è true, ad indicare il controllo forzato delle dipendenze ma,
+nel casao sia impostato a dalso Spring tratta la dipendenza opzionale e non solleverà alcuna eccezione.
+
+Utilizzando Employee.java per tale scenario:
+
+import org.springframework.beans.factory.annotation.Autowired;
+ 
+public class Employee {
+ 
+ private String name;
+ private int age;
+ private Address address;
+ 
+ public Employee() {
+ }
+ 
+ public String getName() {
+  return name;
+ }
+ 
+ public void setName(String name) {
+  this.name = name;
+ }
+ 
+ public int getAge() {
+  return age;
+ }
+ 
+ public void setAge(int age) {
+  this.age = age;
+ }
+ 
+ public Address getAddress() {
+  return address;
+ }
+ 
+ 
+ // Qui Autowired è applicato direttamente sul metodo setter
+ // ed è impostato come required=false, se non presente sarà null
+ @Autowired(required=false)
+ public void setAddress(Address address) {
+  this.address = address;
+ }
+ 
+}
+
+La classe Employee ha ora l'annotazione @Autowired(required=false) per il metodo setter di address
+Se faremo girare il programma con la classe di test precedente non avremo il sollevamento di 
+alcuna eccezione da parte di Spring.
+
